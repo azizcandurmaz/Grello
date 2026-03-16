@@ -4,7 +4,7 @@
 
 ## Proje Hakkında
 
-![Ürün Tanıtım Görseli](Product.png)
+![Ürün Tanıtım Görseli](product_poster.png)
 
 **Proje Tanımı:** 
 
@@ -28,16 +28,10 @@ Grello, kullanıcıların görevlerini oluşturma, listeleme, düzenleme ve silm
 
 ## Proje Ekibi
 
-**Grup Adı:** 
-> Belirlediğiniz grup adı buraya yazılacaktır.
+**Grup Adı:** Specter
 
 **Ekip Üyeleri:** 
-- Ali Tutar
-- Veli Yılmaz
-- Selami Demir
-- Ayşe Kaya
-- Fatma Öztürk
-- Hayriye Şahin
+- Aziz Can Durmaz
 
 ---
 

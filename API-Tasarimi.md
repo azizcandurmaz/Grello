@@ -1,8 +1,8 @@
 # API Tasarımı - OpenAPI Specification (OAS)
 
-**Grello Projesi OpenAPI Spesifikasyon Dosyası:** [openapi.yaml](openapi.yaml)
+**Grello OpenAPI Spesifikasyon Dosyası:** [openapi.yaml](openapi.yaml)
 
-Bu doküman, Grello Proje ve Görev Yönetimi sistemi için OpenAPI Specification (OAS) 3.0 standardına göre hazırlanmış API tasarımını ve mimari kararlarını içermektedir.
+Bu doküman, Grello Proje ve Görev Yönetimi Sistemi için OpenAPI Specification (OAS) 3.0 standardına göre hazırlanmış API tasarımını ve mimari kararlarını içermektedir.
 
 ## 1. Mimari Kararlar ve Standartlar
 

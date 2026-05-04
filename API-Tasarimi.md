@@ -15,7 +15,7 @@ API tasarımı yapılırken aşağıdaki modern yazılım mühendisliği standar
 
 ## 2. API Uç Noktaları (Endpoints)
 
-Sistemde toplam 10 adet fonksiyonel gereksinimi karşılayan uç noktalar bulunmaktadır:
+Sistemdeki 10 fonksiyonel gereksinimi karşılayan uç noktalar (endpoints):
 
 ### Proje Yönetimi
 - `POST /api/projects` - Yeni Proje Oluşturma

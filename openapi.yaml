@@ -1,0 +1,597 @@
+openapi: 3.0.3
+info:
+  title: Grello - Görev ve Proje Yönetim API'si
+  version: 1.0.0
+  description: >
+    Bu API, kullanıcıların projelerini ve bu projelere ait görevleri yönetmelerini sağlayan
+    bir RESTful servistir. Temel CRUD (Create, Read, Update, Delete) işlemlerini
+    destekler. Kullanıcıların projeler oluşturmalarına, bu projelere görevler eklemelerine, 
+    görevlerin durumlarını takip etmelerine, güncellemelerine ve projeler üzerinde düzenli bir çalışma akışı 
+    oluşturmalarına yardımcı olur. Tüm istekler JWT tabanlı kimlik doğrulama gerektirir.
+  contact:
+    name: Aziz Can Durmaz
+    email: azizcan976@hotmail.com
+
+servers:
+  - url: https://api.vercel.com/v1
+    description: Üretim sunucusu (Production)
+  - url: https://staging-api.vercel.com/v1
+    description: Test sunucusu (Staging)
+  - url: https://localhost:3000/v1
+    description: Yerel geliştirme sunucusu (Development)
+
+tags:
+  - name: Projects
+    description: Proje oluşturma, listeleme, güncelleme ve silme işlemleri
+  - name: Tasks
+    description: Projelere ait görevler oluşturma, listeleme, güncelleme ve silme işlemleri
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/projects:
+    post:
+      tags:
+        - Projects
+      summary: Yeni Proje Oluştur
+      description: Kullanıcının yeni bir proje tanımlamasını sağlar. Oluşturulan proje veritabanına kaydedilir.
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        "201":
+          description: Proje başarıyla oluşturuldu.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        "400":
+          description: Geçersiz veri girişi veya eksik alan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Projects
+      summary: Mevcut Projeleri Listele
+      description: Giriş yapmış kullanıcıya ait tüm projeleri liste halinde getirir.
+      operationId: listProjects
+      responses:
+        "200":
+          description: Projeler başarıyla listelendi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /api/projects/{projectId}:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: İşlem yapılacak projenin benzersiz kimlik numarası (UUID).
+        schema:
+          type: string
+          format: uuid
+        example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+    
+    put:
+      tags:
+        - Projects
+      summary: Proje Güncelle
+      description: Belirtilen ID'ye sahip projenin adı veya açıklaması gibi bilgileri günceller.
+      operationId: updateProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        "200":
+          description: Proje başarıyla güncellendi.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        "400":
+          description: Geçersiz istek verisi.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Proje bulunamadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Projects
+      summary: Proje Sil
+      description: Belirtilen ID'ye sahip projeyi ve bu projeye ait tüm görevleri kalıcı olarak siler.
+      operationId: deleteProject
+      responses:
+        "204":
+          description: Proje ve bağlı tüm görevler başarıyla silindi.
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'        
+        "404":
+          description: Proje bulunamadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /api/projects/{projectId}/tasks:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: Görevlerin ait olduğu projenin benzersiz kimlik numarası (UUID).
+        schema:
+          type: string
+          format: uuid
+        example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+
+    post:
+      tags:
+        - Tasks
+      summary: Projeye Yeni Görev Ekle
+      description: Belirtilen ID'ye sahip projeye yeni bir görev tanımlar. Görev varsayılan olarak "todo" durumunda oluşturulur.
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        "201":
+          description: Görev başarıyla oluşturuldu.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        "400":
+          description: Geçersiz veri girişi veya eksik alan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Proje bulunamadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Tasks
+      summary: Projeye Ait Görevleri Listele
+      description: Belirtilen ID'ye sahip projeye eklenmiş tüm görevleri liste halinde getirir.
+      operationId: listTasksByProject
+      responses:
+        "200":
+          description: Görevler başarıyla listelendi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Proje bulunamadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /api/tasks/{taskId}:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        description: İşlem yapılacak görevin benzersiz kimlik numarası (UUID).
+        schema:
+          type: string
+          format: uuid
+        example: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+
+    put:
+      tags:
+        - Tasks
+      summary: Görev Güncelle
+      description: Belirtilen ID'ye sahip görevin başlığını veya açıklamasını günceller.
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        "200":
+          description: Görev başarıyla güncellendi.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        "400":
+          description: Geçersiz istek verisi.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Görev bulunamadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Tasks
+      summary: Görev Sil
+      description: Belirtilen ID'ye sahip görevi sistemden kalıcı olarak siler.
+      operationId: deleteTask
+      responses:
+        "204":
+          description: Görev başarıyla silindi.
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Görev bulunamadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/tasks/{taskId}/status:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        description: Durumu güncellenecek görevin benzersiz kimlik numarası (UUID).
+        schema:
+          type: string
+          format: uuid
+        example: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+
+    put:
+      tags:
+        - Tasks
+      summary: Görev Durumu Güncelle
+      description: Görevin durumunu (todo, in-progress, done) değiştirmeyi sağlar.
+      operationId: updateTaskStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskStatusInput'
+      responses:
+        "200":
+          description: Görev durumu başarıyla güncellendi.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        "400":
+          description: Geçersiz durum değeri.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Görev bulunamadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /api/tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Görevleri Filtrele
+      description: Kullanıcının tüm görevlerini durumlarına (todo, in-progress, done) göre filtreleyerek listelemesini sağlar.
+      operationId: filterTasks
+      parameters:
+        - name: status
+          in: query
+          required: true
+          description: Filtrelenecek görev durumu.
+          schema:
+            type: string
+            enum: [todo, in-progress, done]
+          example: "in-progress"
+      responses:
+        "200":
+          description: Filtrelenmiş görevler başarıyla getirildi.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        "400":
+          description: Geçersiz filtre parametresi.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'JWT tabanlı kimlik doğrulama. İstek başlığına "Authorization: Bearer <token>" eklenmelidir.'
+
+  schemas:
+  # --- PROJE MODELLERİ ---
+    Project:
+      type: object
+      description: Sistemde kayıtlı bir projenin tüm detaylarını temsil eden model.
+      required:
+        - id
+        - name
+        - createdAt
+        - userId
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Projenin benzersiz kimlik numarası (UUID).
+          example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+        name:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Projenin adı.
+          example: "Yazılım Mühendisliği Dönem Projesi"
+        description:
+          type: string
+          nullable: true
+          maxLength: 250
+          description: Projeye ait kısa açıklama.
+          example: "Yazılım Mühendisliği dersi için geliştirilecek ve dönem sonunda teslim edilecek web uygulaması ve mobil uygulama projesi."
+        createdAt:
+          type: string
+          format: date-time
+          description: Projenin oluşturulma tarihi (ISO 8601).
+          example: "2026-03-18T18:08:00Z"
+        userId:
+          type: string
+          format: uuid
+          description: Projenin ait olduğu kullanıcının ID'si.
+          example: "a110f1ee-2c34-4b01-90e6-d701748f0999"
+    
+    ProjectInput:
+      type: object
+      description: Yeni bir proje oluştururken veya güncellerken gönderilecek veri modeli.
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Projenin adı.
+          minLength: 3
+          maxLength: 50
+          example: "Yazılım Mühendisliği Dönem Projesi"
+        description:
+          type: string
+          nullable: true
+          maxLength: 250
+          description: Projeye ait kısa açıklama.
+          example: "Yazılım Mühendisliği dersi için geliştirilecek ve dönem sonunda teslim edilecek web uygulaması ve mobil uygulama projesi."
+
+  # --- GÖREV MODELLERİ ---
+    Task:
+      type: object
+      description: Bir projeye ait görevin tüm detaylarını temsil eden model.
+      required:
+        - id
+        - title
+        - status
+        - createdAt
+        - projectId
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Görevin benzersiz kimlik numarası (UUID).
+          example: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Görevin başlığı.
+          example: "OpenAPI Dosyasını Hazırla"
+        description:
+          type: string
+          nullable: true
+          description: Göreve ait detaylı açıklama.
+          example: "API dosyası içeriği eksiksiz doldurulacak."
+        status:
+          type: string
+          description: Görevin mevcut durumu.
+          enum: [todo, in-progress, done]
+          default: todo
+          example: "in-progress"
+        createdAt:
+          type: string
+          format: date-time
+          description: Görevin oluşturulma tarihi (ISO 8601).
+          example: "2026-03-18T19:07:00Z"
+        projectId:
+          type: string
+          format: uuid
+          description: Görevin ait olduğu projenin ID'si.
+          example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+
+    TaskInput:
+      type: object
+      description: Yeni bir görev oluştururken veya güncellerken gönderilecek veri modeli.
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: Görevin başlığı.
+          minLength: 3
+          maxLength: 100
+          example: "OpenAPI Dosyasını Hazırla"
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: Göreve ait detaylı açıklama.
+          example: "API dosyası içeriği eksiksiz doldurulacak."
+
+    TaskStatusInput:
+      type: object
+      description: Görevin sadece durumunu güncellemek için gönderilecek veri modeli.
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: Görevin yeni durumu.
+          enum: [todo, in-progress, done]
+          example: "done"
+
+  # --- HATA MODELİ ---
+    Error:
+      type: object
+      description: Hata durumlarında döndürülen standart hata yanıtı.
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Hatayı açıklayan mesaj.
+          example: "Proje bulunamadı."
+        code:
+          type: integer
+          description: HTTP durum kodu veya dahili hata kodu.
+          example: 404              

@@ -1,1 +1,9 @@
 .DS_Store
+# .NET Core
+bin/
+obj/
+appsettings.Development.json
+*.user
+*.userosscache
+*.sln.docstates
+.vscode/
